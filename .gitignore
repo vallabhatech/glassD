@@ -1,0 +1,19 @@
+# local secrets
+backend/src/main/resources/application-local.properties
+
+# frontend
+frontend/node_modules/
+frontend/.next/
+
+# logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+#logs
+*.log

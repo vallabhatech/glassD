@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: repoverse-backend
+
+server:
+  port: 8080

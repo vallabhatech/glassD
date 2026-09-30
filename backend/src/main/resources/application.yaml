@@ -1,6 +1,10 @@
 spring:
   application:
-    name: repoverse-backend
+    name: opensource-galaxy-backend
 
 server:
-  port: 8080
+  port: ${PORT:8080}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

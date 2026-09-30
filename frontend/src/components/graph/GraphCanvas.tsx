@@ -1,189 +1,54 @@
 "use client";
 
-import * as THREE from "three";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import type { PerspectiveCamera } from "three";
+import { OrbitControls, PerspectiveCamera, Stars } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import NodeMesh from "@/components/graph/Node";
+import EdgeLine from "@/components/graph/Edge";
+import type { EcosystemGraph, GraphNode } from "@/types/ecosystem";
+import styles from "./styles.module.scss";
 
-type Node = {
-    id: string;
-    label: string;
-    x: number;
-    y: number;
-    z: number;
+export default function GraphCanvas({ data }: { data: EcosystemGraph }) {
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const nodeMap = useMemo(() => new Map(data.nodes.map((node) => [node.id, node])), [data.nodes]);
 
-    // optional future fields (safe for backend expansion)
-    type?: string;
-    stars?: number;
-    description?: string;
-    language?: string;
-};
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100vh" }}>
+      <Canvas dpr={[1, 1.75]} gl={{ antialias: true }}>
+        <PerspectiveCamera makeDefault position={[0, 0, 210]} fov={60} />
+        <color attach="background" args={["#05060a"]} />
+        <ambientLight intensity={0.65} />
+        <pointLight position={[100, 120, 160]} intensity={1600} decay={0} />
+        <Stars radius={220} depth={100} count={1200} factor={2} saturation={0} fade />
+        {data.edges.map((edge, index) => {
+          const from = nodeMap.get(edge.source);
+          const to = nodeMap.get(edge.target);
+          if (!from || !to) return null;
+          return <EdgeLine key={`${edge.source}-${edge.target}-${index}`} from={from} to={to} relationship={edge.relationship} />;
+        })}
+        {data.nodes.map((node) => (
+          <NodeMesh key={node.id} node={node} selected={selectedNode?.id === node.id} onSelect={setSelectedNode} />
+        ))}
+        <OrbitControls enableDamping dampingFactor={0.08} minDistance={50} maxDistance={500} />
+        <EffectComposer><Bloom intensity={1.1} luminanceThreshold={0.2} mipmapBlur /></EffectComposer>
+      </Canvas>
 
-type Edge = {
-    source: string;
-    target: string;
-};
+      <header style={{ position: "absolute", zIndex: 5, top: 20, left: 20, pointerEvents: "none" }}>
+        <div style={{ color: "#b2a9ff", fontSize: 12, fontWeight: 700, letterSpacing: ".16em" }}>ECOSYSTEM</div>
+        <h1 style={{ margin: "6px 0", fontSize: 28 }}>{data.ecosystem}</h1>
+        <p style={{ margin: 0, color: "#9ba3b4" }}>{data.nodes.length} nodes · {data.edges.length} relationships</p>
+      </header>
 
-type Props = {
-    nodes: Node[];
-    edges: Edge[];
-};
-
-/* ---------------- NODE ---------------- */
-
-function NodeMesh({
-    node,
-    onClick,
-}: {
-    node: Node;
-    onClick: (node: Node) => void;
-}) {
-    return (
-        <mesh
-            position={[node.x, node.y, node.z]}
-            onClick={() => onClick(node)}
-        >
-            <sphereGeometry args={[5, 16, 16]} />
-            <meshStandardMaterial
-                color="#4f46e5"
-                emissive="#4f46e5"
-                emissiveIntensity={1.5}
-            />
-        </mesh>
-    );
-}
-
-/* ---------------- EDGE ---------------- */
-
-function EdgeLine({ from, to }: { from: Node; to: Node }) {
-    const positions = useMemo(
-        () =>
-            new Float32Array([
-                from.x, from.y, from.z,
-                to.x, to.y, to.z,
-            ]),
-        [from, to]
-    );
-
-    return (
-        <line>
-            <bufferGeometry>
-                <bufferAttribute
-                    attach="attributes-position"
-                    args={[positions, 3]}
-                />
-            </bufferGeometry>
-            <lineBasicMaterial color="white" />
-        </line>
-    );
-}
-
-/* ---------------- MAIN ---------------- */
-
-export default function GraphCanvas({ nodes, edges }: Props) {
-    const cameraRef = useRef<PerspectiveCamera | null>(null);
-
-    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-
-    const safeNodes = nodes ?? [];
-    const safeEdges = edges ?? [];
-
-    /* CENTER GRAPH */
-    const centeredNodes = useMemo(() => {
-        if (!safeNodes.length) return [];
-
-        const cx = safeNodes.reduce((s, n) => s + n.x, 0) / safeNodes.length;
-        const cy = safeNodes.reduce((s, n) => s + n.y, 0) / safeNodes.length;
-        const cz = safeNodes.reduce((s, n) => s + n.z, 0) / safeNodes.length;
-
-        return safeNodes.map((n) => ({
-            ...n,
-            x: n.x - cx,
-            y: n.y - cy,
-            z: n.z - cz,
-        }));
-    }, [safeNodes]);
-
-    /* MAP NODES */
-    const nodeMap = useMemo(() => {
-        const map = new Map<string, Node>();
-        centeredNodes.forEach((n) => map.set(n.id, n));
-        return map;
-    }, [centeredNodes]);
-
-    return (
-        <div style={{ height: "100vh", width: "100%", position: "relative" }}>
-            <Canvas
-                camera={{ position: [0, 0, 200], fov: 60 }}
-                onCreated={({ camera }) => {
-                    cameraRef.current = camera as PerspectiveCamera;
-                }}
-            >
-                <ambientLight intensity={0.6} />
-                <pointLight position={[100, 100, 100]} />
-
-                {/* NODES */}
-                {centeredNodes.map((node) => (
-                    <NodeMesh
-                        key={node.id}
-                        node={node}
-                        onClick={(n) => setSelectedNode(n)}
-                    />
-                ))}
-
-                {/* EDGES */}
-                {safeEdges.map((edge, i) => {
-                    const from = nodeMap.get(edge.source);
-                    const to = nodeMap.get(edge.target);
-
-                    if (!from || !to) return null;
-
-                    return <EdgeLine key={i} from={from} to={to} />;
-                })}
-
-                <OrbitControls />
-
-                <EffectComposer>
-                    <Bloom intensity={1.2} luminanceThreshold={0.1} />
-                </EffectComposer>
-            </Canvas>
-
-            {/* ---------------- SIDE PANEL ---------------- */}
-            {selectedNode && (
-                <div
-                    style={{
-                        position: "absolute",
-                        top: 20,
-                        right: 20,
-                        width: 320,
-                        padding: 16,
-                        background: "rgba(0,0,0,0.85)",
-                        color: "white",
-                        borderRadius: 12,
-                        backdropFilter: "blur(10px)",
-                    }}
-                >
-                    <h2>{selectedNode.label}</h2>
-                    <p>ID: {selectedNode.id}</p>
-                    {selectedNode.type && <p>Type: {selectedNode.type}</p>}
-                    {selectedNode.language && <p>Lang: {selectedNode.language}</p>}
-                    {selectedNode.stars !== undefined && (
-                        <p>⭐ {selectedNode.stars}</p>
-                    )}
-                    {selectedNode.description && (
-                        <p>{selectedNode.description}</p>
-                    )}
-
-                    <button
-                        onClick={() => setSelectedNode(null)}
-                        style={{ marginTop: 10 }}
-                    >
-                        Close
-                    </button>
-                </div>
-            )}
-        </div>
-    );
+      {selectedNode && (
+        <aside className={styles.panel} aria-label="Selected node details">
+          <h2 className={styles.panelTitle}>{selectedNode.label}</h2>
+          <p className={styles.panelMeta}>{selectedNode.type} · {selectedNode.language ?? "Unknown language"}</p>
+          <p className={styles.panelDescription}>{selectedNode.description || "No description available."}</p>
+          <p className={styles.panelMeta}>★ {selectedNode.stars.toLocaleString()} · score {selectedNode.score.toFixed(1)}</p>
+          <button className={styles.close} type="button" onClick={() => setSelectedNode(null)}>Close</button>
+        </aside>
+      )}
+    </div>
+  );
 }

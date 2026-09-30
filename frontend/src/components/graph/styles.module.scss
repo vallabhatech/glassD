@@ -1,0 +1,11 @@
+.panel {
+  position: absolute; z-index: 10; top: 20px; right: 20px;
+  width: min(360px, calc(100vw - 40px)); padding: 18px;
+  border: 1px solid rgba(255,255,255,.12); border-radius: 18px;
+  background: rgba(10,12,20,.84); color: #f7f8fb; backdrop-filter: blur(18px);
+  box-shadow: 0 24px 80px rgba(0,0,0,.35);
+}
+.panelTitle { margin: 0 0 6px; font-size: 20px; }
+.panelMeta { margin: 0 0 14px; color: #9ba3b4; font-size: 13px; }
+.panelDescription { color: #c8cdd8; line-height: 1.5; }
+.close { margin-top: 14px; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: 8px 12px; color: #f7f8fb; background: rgba(255,255,255,.06); }

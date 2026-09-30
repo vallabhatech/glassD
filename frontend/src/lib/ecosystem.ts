@@ -1,8 +1,9 @@
-import axios from "axios";
+import { api } from "@/lib/api";
+import type { EcosystemGraph } from "@/types/ecosystem";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-
-export const fetchEcosystem = async (name: string) => {
-    const res = await axios.get(`${API_BASE}/ecosystem/${name}`);
-    return res.data;
-};
+export async function fetchEcosystem(name: string): Promise<EcosystemGraph> {
+  const normalized = name.trim();
+  if (!normalized) throw new Error("Ecosystem name is required.");
+  const { data } = await api.get<EcosystemGraph>(`/ecosystem/${encodeURIComponent(normalized)}`);
+  return data;
+}

@@ -12,7 +12,7 @@ public class HealthController {
     public Map<String, Object> health() {
         return Map.of(
                 "status", "ok",
-                "service", "repovese-backend",
+                "service", "opensource-galaxy-backend",
                 "timestamp", Instant.now().toString());
     }
 }

@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-if (!baseURL) throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+const baseURL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
 
 export const api = axios.create({
   baseURL,

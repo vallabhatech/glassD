@@ -1,222 +1,182 @@
 # OpenSource Galaxy
 
-**Visualizing the Open Source Universe Through Interactive 3D Ecosystem Graphs**
+Interactive 3D exploration for open-source ecosystems.
 
-OpenSource Galaxy is a full-stack application that transforms open-source ecosystems into interactive 3D graphs. Instead of exploring repositories through lists and dependency trees, users can navigate a visual galaxy of connected projects and technologies.
+OpenSource Galaxy turns a GitHub ecosystem search into a navigable graph of repositories and selected contributors. The frontend is built with Next.js, React Three Fiber, and Three.js; the backend uses Java 21 and Spring Boot to query GitHub and prepare graph data.
 
----
+## What it does
 
-## Features
+- Search for an ecosystem such as `react`, `spring`, or `nextjs`.
+- Discover highly starred repositories from GitHub.
+- Classify repository nodes and calculate graph scores.
+- Add a small contributor layer for leading repositories.
+- Generate relationship edges and graph positions.
+- Explore the result in a 3D canvas with orbit controls.
+- Select nodes to inspect repository metadata.
 
-* Interactive 3D ecosystem visualization
-* GitHub ecosystem discovery
-* Dynamic graph generation
-* Repository relationship exploration
-* Node selection and inspection
-* Production-ready frontend and backend architecture
-
-### Current Interaction
-
-* Enter an ecosystem name (e.g. `react`)
-* Explore the generated 3D graph
-* Click on any sphere/node
-* Repository information appears in the **top-right information panel**
-* Rotate, zoom, and navigate the ecosystem using mouse controls
-
----
-
-## Tech Stack
-
-### Frontend
-
-* Next.js
-* TypeScript
-* React
-* Three.js
-* React Three Fiber
-* Axios
-
-### Backend
-
-* Java 21
-* Spring Boot
-* Maven
-
-### APIs
-
-* GitHub REST API
-
----
-
-## Running Locally
-
-> Since hosted backend instances may sleep or become unavailable on free plans, running locally is the recommended approach.
-
-### Prerequisites
-
-Install:
-
-* Java 21+
-* Maven
-* Node.js 20+
-* npm
-
----
-
-## Clone Repository
-
-```bash
-git clone https://github.com/your-username/OpenSource-Galaxy.git
-
-cd OpenSource-Galaxy
-```
-
----
-
-## Backend Setup
-
-Navigate to backend:
-
-```bash
-cd backend
-```
-
-Create:
+## Architecture
 
 ```text
-src/main/resources/application-local.properties
+Browser
+  │
+  ▼
+Next.js / React Three Fiber
+  │  GET /ecosystem/{name}
+  ▼
+Spring Boot API
+  │
+  ├── EcosystemService
+  ├── Graph scoring / classification
+  └── GitHub client
+       │
+       ▼
+    GitHub REST API
 ```
 
-Add:
-
-```properties
-github.token=YOUR_GITHUB_TOKEN
-spring.profiles.active=local
-```
-
-Run backend:
-
-```bash
-mvn spring-boot:run
-```
-
-Backend will start at:
+### Repository layout
 
 ```text
-http://localhost:8080
-```
-
-Verify:
-
-```text
-http://localhost:8080/ecosystem/react
-```
-
-You should receive JSON data.
-
----
-
-## Frontend Setup
-
-Open another terminal:
-
-```bash
-cd frontend
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Create:
-
-```text
-.env.local
-```
-
-Add:
-
-```env
-NEXT_PUBLIC_API_BASE=http://localhost:8080
-```
-
-Run frontend:
-
-```bash
-npm run dev
-```
-
-Frontend will start at:
-
-```text
-http://localhost:3000
-```
-
----
-
-## Usage
-
-1. Open:
-
-```text
-http://localhost:3000
-```
-
-2. Enter an ecosystem name such as:
-
-```text
-react
-```
-
-```text
-spring
-```
-
-```text
-nextjs
-```
-
-3. Explore the generated graph.
-
-4. Click on a sphere to view repository details in the **top-right information panel**.
-
----
-
-## Project Structure
-
-```text
-OpenSource-Galaxy
-│
-├── backend
-│  
-├── frontend
-│
+glassD/
+├── .github/
+│   └── workflows/
+├── backend/
+│   ├── src/main/java/com/repoverse/backend/
+│   │   ├── client/
+│   │   ├── config/
+│   │   ├── controller/
+│   │   ├── dto/
+│   │   ├── service/
+│   │   ├── utils/
+│   │   └── wire/
+│   └── pom.xml
+├── frontend/
+│   ├── src/app/
+│   ├── src/components/graph/
+│   ├── src/lib/
+│   └── package.json
+├── CHANGELOG.md
 └── README.md
 ```
 
----
+## Requirements
 
-## Future Roadmap
+- Node.js 20+
+- npm 10+
+- Java 21+
+- A GitHub token is recommended for higher API limits.
 
-* Density controls
-* Advanced graph clustering
-* Ecosystem depth selection
-* Repository statistics
-* Contributor insights
-* Improved lighting and bloom effects
-* Metallic node materials
-* Galaxy-scale visual layouts
-* Search recommendations
-* Multi-ecosystem comparison
+## Run locally
 
----
+### 1. Clone
+
+```bash
+git clone https://github.com/vallabhatech/glassD.git
+cd glassD
+```
+
+### 2. Start the backend
+
+From `backend/`:
+
+```bash
+./mvnw spring-boot:run
+```
+
+On Windows PowerShell:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Set `GITHUB_TOKEN` in your environment before starting the backend. The backend also accepts `CORS_ALLOWED_ORIGINS` as a comma-separated list.
+
+Health check:
+
+```text
+http://localhost:8080/health
+```
+
+### 3. Start the frontend
+
+Create `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+Then:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Quality checks
+
+Frontend:
+
+```bash
+cd frontend
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Backend:
+
+```bash
+cd backend
+./mvnw test
+```
+
+GitHub Actions runs these checks on pushes and pull requests targeting `main`.
+
+## API
+
+### GET /health
+
+Returns a small service-health payload.
+
+### GET /ecosystem/{name}
+
+Builds a graph for an ecosystem name.
+
+Example:
+
+```text
+GET http://localhost:8080/ecosystem/react
+```
+
+The response contains:
+
+- `ecosystem`
+- `nodes`
+- `edges`
+- `clusters`
+
+## Configuration
+
+| Variable | Component | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Frontend | Backend base URL |
+| `GITHUB_TOKEN` | Backend | GitHub API authentication |
+| `CORS_ALLOWED_ORIGINS` | Backend | Allowed browser origins |
+
+Do not commit real tokens or `.env.local` files.
+
+## Security and maintenance
+
+- CodeQL scans Java and JavaScript/TypeScript.
+- Dependabot checks npm, Maven, and GitHub Actions dependencies.
+- Backend input is validated before ecosystem processing.
+- GitHub credentials are read from environment variables.
+- API responses use explicit JSON content types and bounded request timeouts.
+
+See `CHANGELOG.md` for the modernization history.
 
 ## License
 
-MIT License
-
----
-
-Built with ❤️ for developers who think dependency trees deserve better than spreadsheets.
+MIT
